@@ -149,9 +149,7 @@ major_crimes = ["Murder", "Rape", "Robbery", "Burglary", "Gr. Larceny", "G.L.A."
 # non_numerical_precincts = ['Staten Island', 'Queens South', 'Queens North', 'Brooklyn South', 'Brooklyn North', 'Manhattan South', 'Manhattan North', 'Bronx', 'Central Park Precinct','Midtown Precinct North','Midtown Precinct South']
 df_cleaned = df.dropna(subset=["Precinct"])
 numerical_precincts_only = df_cleaned[~df_cleaned['Precinct'].str.contains('Staten Island|Queens South|Queens North|Brooklyn South|Brooklyn North|Manhattan South|Manhattan North|Bronx|Central Park Precinct|Midtown Precinct North|Midtown Precinct South')]
-# numerical_precincts_only.to_csv("/Users/medermamutov/Desktop/numerical_precincts_only.csv",index = False)
 numerical_precincts_only['Precinct_Number'] = numerical_precincts_only['Precinct'].str.extract('(\d+)', expand=False)
-numerical_precincts_only.to_csv("/Users/medermamutov/Desktop/numerical_precincts_only.csv",index = False)
 numerical_precincts_only['Precinct_Number'] = numerical_precincts_only['Precinct_Number'].astype(int)
 
 #Get geo data by precinct
@@ -177,10 +175,8 @@ gdf2 = gdf2.sort_values(by ='Start_date')
 gdf = gdf2[['geometry', 'Current', 'Start_date', 'Precinct', 'Crime']]
 # gdf2 = gdf2[gdf2['Precinct'] == '1st Precinct']
 # gdf = gdf2.head(5000)
-# gdf = gdf.to_csv("/Users/medermamutov/Desktop/gdf.csv")
 geojson = json.loads(gdf.to_json())
 
-# geojson.head(5).to_csv("/Users/medermamutov/Desktop/gdf5.csv")
 
 app = dash.Dash(__name__)
 app.layout = html.Div([
