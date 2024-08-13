@@ -149,9 +149,7 @@ major_crimes = ["Murder", "Rape", "Robbery", "Burglary", "Gr. Larceny", "G.L.A."
 # non_numerical_precincts = ['Staten Island', 'Queens South', 'Queens North', 'Brooklyn South', 'Brooklyn North', 'Manhattan South', 'Manhattan North', 'Bronx', 'Central Park Precinct','Midtown Precinct North','Midtown Precinct South']
 df_cleaned = df.dropna(subset=["Precinct"])
 numerical_precincts_only = df_cleaned[~df_cleaned['Precinct'].str.contains('Staten Island|Queens South|Queens North|Brooklyn South|Brooklyn North|Manhattan South|Manhattan North|Bronx|Central Park Precinct|Midtown Precinct North|Midtown Precinct South')]
-# numerical_precincts_only.to_csv("/Users/medermamutov/Desktop/numerical_precincts_only.csv",index = False)
 numerical_precincts_only['Precinct_Number'] = numerical_precincts_only['Precinct'].str.extract('(\d+)', expand=False)
-# numerical_precincts_only.to_csv("/Users/medermamutov/Desktop/numerical_precincts_only.csv",index = False)
 numerical_precincts_only['Precinct_Number'] = numerical_precincts_only['Precinct_Number'].astype(int)
 # numerical_precincts_only['Year_number'] = numerical_precincts_only['Start_date'].dt.isocalendar().year #this did not work
 numerical_precincts_only['Year'] = pd.to_datetime(numerical_precincts_only['Start_date']).dt.year
@@ -184,11 +182,7 @@ gdf2['id'] = gdf2.index
 gdf = gdf2[['id','geometry', 'Current', 'Start_date', 'Precinct', 'Crime', 'Year']]
 # gdf2 = gdf2[gdf2['Precinct'] == '1st Precinct']
 # gdf = gdf2.head(5000)
-# gdf = gdf.to_csv("/Users/medermamutov/Desktop/gdf.csv")
 geojson = json.loads(gdf.to_json())
-
-# gdf.to_csv("/Users/medermamutov/Desktop/gdfnew.csv")
-# geojson.head(5).to_csv("/Users/medermamutov/Desktop/gdf5.csv")
 
 print(gdf.shape)
 print(numerical_precincts_only.shape)
@@ -235,9 +229,6 @@ def update_map(selected_crime,selected_year):
     aggregated_gdf = gpd.GeoDataFrame(aggregated_data, geometry='geometry')
     aggregated_gdf.reset_index(inplace=True, drop=True)
     aggregated_gdf['id'] = aggregated_gdf.index
-
-    aggregated_data.to_csv("/Users/medermamutov/Desktop/aggregated_gdf.csv")
-
 
     # filtered_gdf['id'] = filtered_gdf.index  # ensure 'id' column is correct
     geojson = json.loads(aggregated_gdf.to_json())
