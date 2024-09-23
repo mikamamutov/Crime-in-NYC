@@ -1,0 +1,400 @@
+import requests
+import pandas as pd
+import dash
+from dash import dcc
+from dash import html
+from dash.dependencies import Input, Output
+import plotly.express as px
+import io
+import geopandas as gpd
+from shapely import wkt
+import json
+import time
+import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# apis from 1 until 52 for 2023, week 36 from 2023 is missing
+# apis from 1 until 52 for 2022, week 27 is missing
+# apis for 2024
+start_time1 = time.time()
+
+api_urls_1 = [
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=d90815a9-bdad-4bd1-8eff-2df26e115424&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=6b5b81fa-3012-4868-bd8a-3004f8386f79&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=7a549b4e-041b-4a5c-b4b9-87244d3ebc68&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=43877205-9aa0-4c3e-9070-da9342891e51&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=126ef53f-7f9a-4525-ab8c-1ca058d845bd&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=9eff94e9-501e-43c7-a296-80af3ae7b228&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=93cc0ddc-6b66-48dc-a9f4-c8efb731530b&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=2f27ddd0-7eff-44ac-8e1f-02c9261b1b73&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=63bcd8b1-7059-40b7-bd3f-35c26a75f70b&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=150db8df-2842-4217-b5fc-4a003139b475&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=29b410dd-d895-42b3-9dd7-9ae89e908b97&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=6472e946-1489-49ef-91c1-541e346d5b03&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=81be5587-e4a6-4ea9-9024-1d1e5052744d&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=b095080a-88f9-47da-8151-3bcf777a353e&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=305bd897-2bd9-4670-a5e7-218fc14a1375&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=2da95030-f8e4-4439-a3ec-a4001a4cbb43&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=38ee57ca-f863-476d-a625-00ec42225e6a&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=f446e018-c395-400b-b136-7d71a76df7b4&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=6eb338ef-cc78-4c90-af96-8930030af90c&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=6161ad9f-63e5-4d6e-8158-82bac9197542&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=cb80e157-2912-4262-b6cc-50ae6877dcdf&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=2b0a4be2-2a5e-4401-99a1-a8b51a0b62c0&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=876a589a-9019-4499-a2af-314bcbe84450&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=4eb16f31-f31d-4fad-9341-8c9a96471133&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=a7989df1-6912-4772-a726-b617f04be8c1&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=5a4fffb4-9bf6-4bbd-8727-caf3558e3cef&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=0e39c918-7efe-4cbf-aa14-429dcd75141b&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=035d6a5f-75e0-4794-a611-58978b87a290&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=a51a464d-3763-453c-aea9-9bfd4ac0d0f3&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=d0bf9702-be22-44d6-8235-4e1802d446d5&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=f4b21ad6-4559-45ad-a5f9-7c975d06a61c&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=c096a6f1-e8f1-49c5-87e5-2798557f4e72&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=97c3fb0b-78c0-4ec8-8abf-b45420d9596d&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=89302492-abba-4604-803a-36ec045c54b1&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=0760ca06-927e-453e-abc6-3d433b3ef3b8&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=050c9a2a-2ede-47a5-99c4-9999522995f6&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=6f92c461-19fb-429d-921e-4dc674beb519&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=f7859a72-547b-48f2-bb1b-2142a0106c90&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=6f22abbf-35a0-4461-8ef3-e73f3a890283&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=1a7cd4bb-3709-4a83-bfeb-28be1bf1ded8&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=05733d70-4233-4962-a0d7-70aa22845f10&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=833a98f4-e376-48d9-baae-b1b82fd0b1cf&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=2bd75b8f-d128-4173-b59e-e6a69a5ce683&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=20f544b6-4e93-4fdc-b4e2-480873faee6e&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=67d675dd-8baa-4ece-8ac8-f22889785275&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=ac0a0f47-2f0e-4b17-8df1-e7428ec67c05&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=9f819bbd-e498-479b-b7e4-2fb4dad463aa&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=43557fa5-aee7-44d4-afb1-9424a3826dbe&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=aed1dbf6-9423-4708-adeb-7d6508ef775d&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=ae67a1b5-9f42-4004-851e-2f70f7eb68a2&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=6fc68a0c-8e35-4ea7-9a49-721e4694b95c&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=e6d90fe0-aec9-4bfc-99d9-7898964812dc&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=80b21635-306e-4c84-be82-13832297804d&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=a5c42a14-0140-4257-8f27-0e650fe4467f&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=3ae82f39-5034-4154-851b-ba855f2c15cb&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=a2f851f7-4226-4178-becb-645551477353&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=307dab18-892e-483f-8949-5fd8ec58321d&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=9305025c-14f4-4e03-8525-909dc132debd&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=18cf1e53-d047-4c8b-b004-3b9e619f5e3e&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=034a0ac6-7b0f-4a41-a63e-e090cf51dc65&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=960471f7-1e69-47be-8bff-bbe120d1f7ac&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=f250c717-303e-457f-821e-a10a2c31bc2b&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=34aebbfa-5b45-4a48-a692-3f1d838f60c9&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=627d36ad-950e-4945-9543-03c25e32411a&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=81b3f27f-a438-4669-8f30-9cbda97d2d3c&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=f3103d2f-4c2a-4a73-bfae-aa9f20557e55&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=39d1c1fe-0d88-4f0c-b270-f66fdbeff53b&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=db301f30-6417-46c8-8c0a-8bbee3a12c0c&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=d5e6821c-1e82-4a55-9286-a75d0262a109&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=0c75a362-8416-4d39-8468-f78011decae4&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=9724ddbf-a44e-4dd0-a82e-d0eeb4d7f30c&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=d4ce77fc-deed-415c-8cfd-a00da374a7b3&limit=10000',
+]
+
+# In some of the data, the time values are different types so they need to be processed separately
+api_urls_2 = [
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=84b904ff-8d22-41f3-97a7-12449df2194e&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=f94e3863-5f81-454b-8d5f-53437d9df2cc&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=2d3f4015-0395-4230-b766-e30619041adc&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=b9f6c75e-a11e-4b07-9a93-533b5533578f&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=02973d59-c16e-48c6-b20e-107081b5c020&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=4b4aa175-fa88-4cfc-975c-5c23f21cd240&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=0c837ca2-990e-4dad-bc54-e58944c63b35&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=7d6c8086-9307-404b-bbd1-c2f3b1b4559d&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=2101f356-a85b-466d-a0b4-78c08dced5a8&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=07079653-bee4-406c-b101-8ac36eeaa790&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=179f9eb4-0bc1-490b-b7a6-5355a942c6d0&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=ea381ff5-c361-40ed-bdb8-ebadd6d73bdc&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=f36dd64c-c617-4c39-b9bc-20344a937324&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=da263f45-438e-4373-8364-eb6270a01cf7&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=6eadda12-e3d1-4cfb-813e-6ff0c62d9a77&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=ba2f8f10-785a-41e1-8554-fdbb78f7b0a0&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=b144a802-101a-44cb-b40e-f98c1376a4d7&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=965a5d6a-c8e8-448c-8f11-1f1b90739d78&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=646f6126-ba87-47b0-94fa-bce715f109ae&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=fc8a0c35-12df-4dd7-9387-8a8eb17ec515&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=ffb5fac0-9d8e-47e1-88fe-c4ec786d62dd&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=0c3db2f8-717e-4c06-b306-e727ba769ddd&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=4b3496b8-356e-410e-af9a-c2fa56e01d6c&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=9f0128d6-7a1c-4c39-91e5-e23cf6a68abb&limit=10000',
+    'https://data.dathere.com/api/3/action/datastore_search?resource_id=32e08b25-858e-4e6c-98f6-5bb6d4fd2d90&limit=10000'
+    ]
+
+
+# get data from the APIs
+def fetch_data(url):
+    response = requests.get(url)
+    return response.json()['result']['records']
+
+
+def get_data(api_urls):
+    data = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(fetch_data, url) for url in api_urls]
+        for future in as_completed(futures):
+            data.extend(future.result())
+    return data
+
+
+data_1 = get_data(api_urls_1)
+data_2 = get_data(api_urls_2)
+
+end_time1 = time.time()
+print(f"Load data {end_time1 - start_time1} seconds.")
+
+start_time2 = time.time()
+
+# Fix the dates in the second set of data
+df_data4 = pd.json_normalize(data_2)
+df_data4["End_Date"] = pd.to_datetime(df_data4["End_Date"].str.split("T").str[0])
+df_data4["End_Date"] = df_data4["End_Date"].dt.strftime("%-m/%d/%Y")
+
+# Combine two datasets
+df_combined_data_1 = pd.json_normalize(data_1)
+df = pd.concat([df_combined_data_1, df_data4])
+
+# Change the type of data for the new unified dataset
+df["Start_date"] = df["Start_date"].str.strip()
+df["Start_date"] = pd.to_datetime(df["Start_date"])
+df["End_Date"] = df["End_Date"].str.strip()
+df["End_Date"] = pd.to_datetime(df["End_Date"], format="%m/%d/%Y")
+
+# all crime types
+crimes = ["Murder", "Rape", "Robbery", "Fel. Assault", "Burglary", "Gr. Larceny", "G.L.A.", "Transit", "Housing",
+          "Petit Larceny", "Misd. Assault", "UCR Rape*", "Other Sex Crimes", "Shooting Vic.", "Shooting Inc.",
+          "Hate Crimes"]
+major_crimes = ["Murder", "Rape", "Robbery", "Burglary", "Gr. Larceny", "G.L.A.", "Petit Larceny"]
+total_crimes = ["TOTAL"]
+# non_numerical_precincts = ['Staten Island', 'Queens South', 'Queens North', 'Brooklyn South', 'Brooklyn North', 'Manhattan South', 'Manhattan North', 'Bronx', 'Central Park Precinct','Midtown Precinct North','Midtown Precinct South']
+df_cleaned = df.dropna(subset=["Precinct"])
+numerical_precincts_only = df_cleaned[~df_cleaned['Precinct'].str.contains(
+    'Staten Island|Queens South|Queens North|Brooklyn South|Brooklyn North|Manhattan South|Manhattan North|Bronx|Central Park Precinct|Midtown Precinct North|Midtown Precinct South')] 
+numerical_precincts_only['Precinct_Number'] = numerical_precincts_only['Precinct'].str.extract('(\d+)', expand=False)
+
+numerical_precincts_only['Precinct_Number'] = numerical_precincts_only['Precinct_Number'].astype(int)
+# numerical_precincts_only['Year_number'] = numerical_precincts_only['Start_date'].dt.isocalendar().year #this did not work
+numerical_precincts_only['Year'] = pd.to_datetime(numerical_precincts_only['Start_date']).dt.year
+# numerical_precincts_only2 = numerical_precincts_only.sample(n=20000, random_state=42)
+
+numerical_precincts_only2 = numerical_precincts_only.head(120000)
+
+numerical_precincts_only3 = numerical_precincts_only2[numerical_precincts_only2['Crime'].isin(major_crimes)]
+numerical_precincts_only3 = numerical_precincts_only3.groupby('Crime').agg({'Current': 'sum'}).reset_index()
+numerical_precincts_only4 = numerical_precincts_only2[numerical_precincts_only2['Crime'].isin(total_crimes)]
+numerical_precincts_only5 = numerical_precincts_only4.groupby('Start_date').agg({'Current': 'sum'}).reset_index()
+end_time2 = time.time()
+
+print(f"Clean data {end_time2 - start_time2} seconds.")
+start_time2_1 = time.time()
+
+# Get geo data by precinct
+url = 'https://data.cityofnewyork.us/resource/kmub-vria.csv'
+response = requests.get(url)
+df_geo = pd.read_csv(io.StringIO(response.text))
+merged_df_locations = pd.merge(numerical_precincts_only2, df_geo, left_on='Precinct_Number', right_on='precinct')
+merged_df_locations_sorted = merged_df_locations.sort_values(by="Start_date", ascending=True)
+
+end_time2_1 = time.time()
+print(f"Get geo data of precincts {end_time2_1 - start_time2_1} seconds.")
+
+start_time3 = time.time()
+
+# df_nyc_indexed = merged_df_locations_sorted.set_index('Start_date')
+# df_nyc_quarterly = df_nyc_indexed["Current"].resample('Q').sum().reset_index()
+# df_nyc_quarterly_sorted = df_nyc_quarterly.sort_values(by="Start_date",ascending=True)
+
+# Convert 'the_geom' to shapely geometries
+merged_df_locations_sorted['geometry'] = merged_df_locations_sorted['the_geom'].apply(wkt.loads)
+gdf2 = gpd.GeoDataFrame(merged_df_locations_sorted, geometry='geometry')
+gdf2.set_crs(epsg=4326, inplace=True)
+gdf2['Start_date'] = gdf2['Start_date'].astype(str)
+gdf2 = gdf2.sort_values(by='Start_date')
+gdf2.reset_index(inplace=True, drop=True)
+gdf2['id'] = gdf2.index
+
+# NEW CODE
+
+merged_df_locations_sorted['geometry'] = gpd.GeoSeries.from_wkt(merged_df_locations_sorted['the_geom'])
+# Create GeoDataFrame directly setting the CRS to avoid calling it again
+gdf2 = gpd.GeoDataFrame(merged_df_locations_sorted, geometry='geometry', crs='EPSG:4326')
+
+# Convert 'Start_date' to datetime once and sort immediately
+gdf2['Start_date'] = pd.to_datetime(gdf2['Start_date'])
+gdf2.sort_values(by='Start_date', inplace=True)
+
+# Reset index and create an 'id' column efficiently
+gdf2.reset_index(drop=True, inplace=True)
+gdf2['id'] = gdf2.index
+
+# Creating a smaller DataFrame with necessary columns
+gdf = gdf2[['id', 'geometry', 'Current', 'Start_date', 'Precinct', 'Crime', 'Year']]
+
+# NEW CODE
+
+gdf['Start_date'] = pd.to_datetime(gdf['Start_date'])
+# Now you can use the .timestamp() method
+min_timestamp = gdf['Start_date'].min().timestamp() * 1000
+max_timestamp = gdf['Start_date'].max().timestamp() * 1000
+gdf = gdf.sort_values(by='Start_date')
+
+common_layout = {
+    'template': 'plotly_dark',
+    'title_font': {'size': 24, 'color': 'white'},
+    'font': {'color': 'white'},
+    'paper_bgcolor': 'black',
+    'plot_bgcolor': 'black'
+}
+
+# Define a common color scale - Viridis is a good choice for continuous data
+common_color_scale = px.colors.sequential.Viridis
+
+end_time3 = time.time()
+print(f"Add geographics data {end_time3 - start_time3} seconds.")
+
+start_time4 = time.time()
+
+start_date = pd.to_datetime(gdf['Start_date'].min())
+end_date = pd.to_datetime(gdf['Start_date'].max())
+
+# Generate marks for each quarter between the start and end dates
+date_range = pd.date_range(start=start_date, end=end_date, freq='Q')  # 'Q' for quarterly frequency
+marks = {int(date.timestamp() * 1000): {'label': date.strftime('%Y-%m')} for date in date_range}
+
+
+
+app = dash.Dash(__name__)
+app.layout = html.Div([
+    html.H1("NYC Crime Dashboard", style={'textAlign': 'center', 'color': 'white'}),
+    html.Div([
+        html.Div([
+            dcc.Dropdown(
+                id='crime-dropdown',
+                options=[{'label': crime, 'value': crime} for crime in major_crimes],
+                value='Robbery',  # Default selected value
+                clearable=False
+            ),
+            dcc.Dropdown(
+                id='year-dropdown',
+                options=[{'label': str(year), 'value': year} for year in gdf['Year'].unique()],
+                value=gdf['Year'].max(),  # Default to the most recent year
+                clearable=False
+            ),
+            dcc.Graph(id='map-chart', style={'height': '40vh'}),
+        ], style={'height': '30vh', 'width': '50%', 'display': 'inline-block', 'verticalAlign': 'top',
+                  'padding': '0 10px', 'margin': '0'}),
+
+        html.Div([
+            html.Div([
+                dcc.Dropdown(
+                    id='crime-dropdown-line',
+                    options=[{'label': crime, 'value': crime} for crime in major_crimes],
+                    value='Robbery',  # Default selected value
+                    clearable=False
+                ),
+                dcc.Slider(
+                    id='date-slider',
+                    min=int(start_date.timestamp() * 1000),
+                    max=int(end_date.timestamp() * 1000),
+                    value=int(start_date.timestamp() * 1000),
+                    step=86400000,  # One day in milliseconds
+                    marks=marks,  # One day in milliseconds
+
+
+                ),
+                dcc.Graph(id='line-chart', style={'height': '30vh'}),
+            ], style={'padding': '0 10px', 'margin': '0'}),
+        ], style={'width': '50%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+    ], style={'display': 'flex'}),
+
+    html.Div([
+        html.Div([
+            dcc.Graph(
+                figure=px.bar(
+                    numerical_precincts_only3,
+                    x='Crime',
+                    y='Current',
+                    labels={'Current': 'Total per type', 'Crime': 'Type of Crime'}
+                ).update_layout(**common_layout),
+                style={'width': '50%', 'height': '40vh'}
+            ),
+            dcc.Graph(
+                figure=px.line(
+                    numerical_precincts_only5,
+                    x='Start_date',
+                    y='Current',
+                    labels={'Start_date': 'Timeline', 'Current': 'Total crime for the period'}
+                ).update_layout(**common_layout),
+                style={'width': '50%', 'height': '40vh'}
+            ),
+        ], style={'display': 'flex'}),
+    ]),
+], style={'backgroundColor': 'black'})
+
+
+@app.callback(
+    Output('map-chart', 'figure'),
+    [Input('crime-dropdown', 'value'),
+     Input('year-dropdown', 'value')]
+)
+def update_map(selected_crime, selected_year):
+    filtered_gdf = gdf[(gdf['Crime'] == selected_crime) & (gdf['Year'] == selected_year)]
+    aggregated_data = filtered_gdf.groupby(['Year', 'Precinct', 'Crime'], as_index=False).agg({
+        'Current': 'sum',
+        'geometry': 'first'
+    }).reset_index()
+    aggregated_gdf = gpd.GeoDataFrame(aggregated_data, geometry='geometry')
+    aggregated_gdf.reset_index(inplace=True, drop=True)
+    aggregated_gdf['id'] = aggregated_gdf.index
+
+    map_fig = px.choropleth_mapbox(
+        aggregated_gdf,
+        geojson=json.loads(aggregated_gdf.to_json()),
+        locations='id',
+        color='Current',
+        featureidkey="properties.id",
+        hover_name='Precinct',
+        hover_data={'Year': True, 'Current': True},
+        mapbox_style="open-street-map",
+        center={"lat": 40.7128, "lon": -74.0060},
+        zoom=8,
+        color_continuous_scale=common_color_scale
+    )
+    map_fig.update_layout(**common_layout, mapbox_accesstoken="your_mapbox_access_token")
+    return map_fig
+
+
+@app.callback(
+    Output('line-chart', 'figure'),
+    [Input('crime-dropdown-line', 'value'),
+     Input('date-slider', 'value')]
+)
+def update_line_chart(selected_crime, selected_date):
+    selected_date = pd.to_datetime(selected_date, unit='ms')
+    filtered_data = gdf[(gdf['Crime'] == selected_crime) &
+                        (gdf['Start_date'] <= selected_date.strftime('%Y-%m-%d'))]
+    daily_data = filtered_data.groupby('Start_date')['Current'].sum().reset_index()
+    daily_data = daily_data.sort_values('Start_date')
+
+    line_fig = px.line(
+        daily_data,
+        x='Start_date',
+        y='Current',
+        labels={'Start_date': 'Timeline', 'Current': 'Cases'},
+        color_discrete_sequence=common_color_scale  # apply color from common color scale
+    )
+    line_fig.update_layout(**common_layout)
+    line_fig.update_traces(line=dict(color='rgb(99,110,250,255)', width=4,
+                                     dash='dashdot'))
+    return line_fig
+
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
+
+end_time4 = time.time()
+
+print(f"Load application {end_time4 - start_time4} seconds.")
+
+
